@@ -11,6 +11,7 @@ import { createFallbackEvent, extractEventsFromText } from '../extractor/eventEx
 import { remoteOcrPdfBytes } from '../ocr/remoteOCR'
 import { ocrPdfBytes } from '../ocr/tesseractOCR'
 import { parseDocument as defaultParseDocument, type ParseDocumentInput } from '../parsers/parseDocument'
+import { redactSensitiveStudentInfo } from '../privacy/privacyRedactor'
 import { aiSettingsAreComplete, withDefaultRecognitionSettings } from '../recognition/settings'
 
 type ParseDocumentFn = (input: ParseDocumentInput) => Promise<ParseOutcome>
@@ -64,6 +65,17 @@ function mergeEvents(localEvents: CalendarEvent[], aiEvents: CalendarEvent[]): C
   }
 
   return [...merged.values()]
+}
+
+function applyPrivacyRedaction(outcome: ParseOutcome): ParseOutcome {
+  const text = redactSensitiveStudentInfo(outcome.text)
+  if (text === outcome.text) return outcome
+
+  return {
+    ...outcome,
+    text,
+    warnings: [...outcome.warnings, '已自动脱敏姓名和学号字段。'],
+  }
 }
 
 async function applyPdfOcrIfNeeded(
@@ -178,9 +190,10 @@ export async function parseDocumentToEvents(
       extractPdfOcrText,
       extractRemotePdfOcrText,
     )
-    const localEvents = buildEvents(outcomeWithOcr.text)
+    const redactedOutcome = applyPrivacyRedaction(outcomeWithOcr)
+    const localEvents = buildEvents(redactedOutcome.text)
     const enhanced = await applyAiIfEnabled(
-      outcomeWithOcr,
+      redactedOutcome,
       localEvents,
       recognitionSettings,
       extractAiEventsFromText,

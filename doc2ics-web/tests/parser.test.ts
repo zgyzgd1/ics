@@ -1,6 +1,7 @@
-﻿import { describe, expect, it } from 'vitest'
-import { detectFileKind } from '../src/utils/fileUtils'
+import { describe, expect, it, vi } from 'vitest'
 import { parseDocument } from '../src/core/parsers/parseDocument'
+import { buildPdfDocumentOptions } from '../src/core/parsers/pdfParser'
+import { detectFileKind } from '../src/utils/fileUtils'
 
 describe('file kind detection', () => {
   it('detects pdf by extension', () => {
@@ -30,5 +31,18 @@ describe('parseDocument csv path', () => {
 
     expect(output.fileKind).toBe('csv')
     expect(output.text).toContain('Design review')
+  })
+})
+
+describe('pdf parser options', () => {
+  it('disables nested PDF workers when running without window', () => {
+    const originalWindow = globalThis.window
+    vi.stubGlobal('window', undefined)
+
+    const options = buildPdfDocumentOptions(new Uint8Array([1, 2, 3]))
+
+    expect(options.disableWorker).toBe(true)
+    expect(options.data).toEqual(new Uint8Array([1, 2, 3]))
+    vi.stubGlobal('window', originalWindow)
   })
 })

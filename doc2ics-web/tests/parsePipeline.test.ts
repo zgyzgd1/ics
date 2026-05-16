@@ -73,4 +73,52 @@ describe('parseDocumentToEvents', () => {
     expect(response.events[0].summary).toBe('AI 识别的项目会')
     expect(response.outcome.warnings).toContain('AI 增强识别已合并到结果中。')
   })
+
+  it('redacts student privacy before preview, local extraction, and AI extraction', async () => {
+    let aiInput = ''
+    const input = {
+      fileName: 'timetable.txt',
+      mimeType: 'text/plain',
+      bytes: new TextEncoder().encode('学生姓名：张三\n学号：202312345678\n课程在 2026-09-07 08:00 开始'),
+    }
+
+    const response = await parseDocumentToEvents(input, {
+      parseDocument: async () => ({
+        text: '学生姓名：张三\n学号：202312345678\n课程在 2026-09-07 08:00 开始',
+        fileKind: 'txt',
+        parseEngine: 'text',
+        warnings: [],
+        requiresOcr: false,
+      }),
+      recognitionSettings: {
+        ocr: {
+          mode: 'local',
+          language: 'chi_sim+eng',
+          remoteEndpoint: '',
+        },
+        ai: {
+          enabled: true,
+          baseUrl: 'https://api.example.com/v1',
+          apiKey: 'test-key',
+          model: 'test-model',
+        },
+      },
+      extractAiEventsFromText: async (text) => {
+        aiInput = text
+        return []
+      },
+    })
+
+    expect(response.ok).toBe(true)
+    if (!response.ok) return
+    expect(response.outcome.text).not.toContain('张三')
+    expect(response.outcome.text).not.toContain('202312345678')
+    expect(response.outcome.text).toContain('学生姓名：[已脱敏姓名]')
+    expect(response.outcome.text).toContain('学号：[已脱敏学号]')
+    expect(response.outcome.warnings).toContain('已自动脱敏姓名和学号字段。')
+    expect(aiInput).not.toContain('张三')
+    expect(aiInput).not.toContain('202312345678')
+    expect(response.events.some((event) => event.description?.includes('张三'))).toBe(false)
+    expect(response.events.some((event) => event.description?.includes('202312345678'))).toBe(false)
+  })
 })

@@ -21,3 +21,6 @@
 - Added AI context compression before model requests to deduplicate repeated text and keep high-value schedule clues.
 - Added a focused test for long noisy context containing course, meeting, location, and email signals.
 - Updated the enhancement panel copy to tell users AI recognition compresses long document context before extraction.
+- Added automatic privacy redaction for student names and student IDs before preview, local extraction, AI extraction, and ICS export.
+- Fixed PDF parsing in the browser by parsing PDFs on the main thread instead of the module worker, avoiding PDF.js `window` compatibility errors.
+- Verified `E:\timeTableForStu12.pdf` through the local web flow without printing private content: parsing succeeded, 3 student ID fields were redacted, no unresolved student ID patterns remained in preview or ICS output.

@@ -5,6 +5,13 @@ GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 type ParsedPdfKind = 'digital' | 'scanned'
 
+export function buildPdfDocumentOptions(bytes: Uint8Array) {
+  return {
+    data: new Uint8Array(bytes),
+    disableWorker: typeof window === 'undefined',
+  }
+}
+
 function readPageTextItems(items: unknown[]): string {
   return items
     .map((item) => {
@@ -17,7 +24,7 @@ function readPageTextItems(items: unknown[]): string {
 }
 
 export async function detectPdfType(bytes: Uint8Array): Promise<ParsedPdfKind> {
-  const doc = await getDocument({ data: bytes }).promise
+  const doc = await getDocument(buildPdfDocumentOptions(bytes)).promise
   const firstPage = await doc.getPage(1)
   const content = await firstPage.getTextContent()
   const line = readPageTextItems(content.items)
@@ -30,7 +37,7 @@ export async function detectPdfType(bytes: Uint8Array): Promise<ParsedPdfKind> {
 }
 
 export async function extractTextFromPdf(bytes: Uint8Array): Promise<string> {
-  const doc = await getDocument({ data: bytes }).promise
+  const doc = await getDocument(buildPdfDocumentOptions(bytes)).promise
   const pages: string[] = []
 
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
@@ -92,7 +99,7 @@ function createRenderCanvas(width: number, height: number): RenderCanvas {
 }
 
 export async function renderPdfPagesToImageBlobs(bytes: Uint8Array, scale = 2): Promise<Blob[]> {
-  const doc = await getDocument({ data: bytes }).promise
+  const doc = await getDocument(buildPdfDocumentOptions(bytes)).promise
   const blobs: Blob[] = []
 
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
