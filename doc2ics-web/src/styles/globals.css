@@ -155,6 +155,59 @@ a {
   font-weight: 600;
 }
 
+.parse-progress {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(14, 116, 144, 0.22);
+  border-radius: 0.6rem;
+  background: rgba(240, 249, 255, 0.7);
+}
+
+.parse-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+  color: #164e63;
+}
+
+.progress-track {
+  width: 100%;
+  height: 0.7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #0e7490);
+  transition: width 0.25s ease;
+}
+
+.parse-progress-detail {
+  color: #334155;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.parse-progress.is-error {
+  border-color: rgba(185, 28, 28, 0.28);
+  background: rgba(254, 242, 242, 0.7);
+}
+
+.parse-progress.is-error .parse-progress-header,
+.parse-progress.is-error .parse-progress-detail {
+  color: #991b1b;
+}
+
+.parse-progress.is-error .progress-fill {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+}
+
 .warnings {
   margin: 0;
   padding-left: 1rem;

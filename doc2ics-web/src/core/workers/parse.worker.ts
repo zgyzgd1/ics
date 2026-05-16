@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import type { ParseWorkerResponse, RecognitionSettings } from '../../types/app'
+import type { ParseProgress, ParseWorkerResponse, RecognitionSettings } from '../../types/app'
 import { parseDocumentToEvents } from './parsePipeline'
 
 interface ParseWorkerMessage {
@@ -9,6 +9,10 @@ interface ParseWorkerMessage {
   buffer: ArrayBuffer
   recognitionSettings?: RecognitionSettings
 }
+
+type ParseWorkerOutbound =
+  | { type: 'progress'; progress: ParseProgress }
+  | { type: 'result'; response: ParseWorkerResponse }
 
 self.onmessage = async (event: MessageEvent<ParseWorkerMessage>) => {
   const { fileName, mimeType, buffer, recognitionSettings } = event.data
@@ -19,9 +23,14 @@ self.onmessage = async (event: MessageEvent<ParseWorkerMessage>) => {
       mimeType,
       bytes: new Uint8Array(buffer),
     },
-    { recognitionSettings },
+    {
+      recognitionSettings,
+      onProgress: (progress) => {
+        postMessage({ type: 'progress', progress } satisfies ParseWorkerOutbound)
+      },
+    },
   )
-  postMessage(response)
+  postMessage({ type: 'result', response } satisfies ParseWorkerOutbound)
 }
 
 export {}

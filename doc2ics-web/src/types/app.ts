@@ -57,6 +57,12 @@ export interface ParseOutcome {
   requiresOcr: boolean
 }
 
+export interface ParseProgress {
+  percent: number
+  status: string
+  detail?: string
+}
+
 export interface ParseWorkerSuccess {
   ok: true
   outcome: ParseOutcome

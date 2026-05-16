@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseDocumentToEvents } from '../src/core/workers/parsePipeline'
+import type { ParseProgress } from '../src/types/app'
 
 describe('parseDocumentToEvents', () => {
   it('uses OCR text from scanned PDFs before extracting events', async () => {
@@ -120,5 +121,33 @@ describe('parseDocumentToEvents', () => {
     expect(aiInput).not.toContain('202312345678')
     expect(response.events.some((event) => event.description?.includes('张三'))).toBe(false)
     expect(response.events.some((event) => event.description?.includes('202312345678'))).toBe(false)
+  })
+
+  it('reports parsing progress stages', async () => {
+    const progress: ParseProgress[] = []
+
+    const response = await parseDocumentToEvents(
+      {
+        fileName: 'agenda.txt',
+        mimeType: 'text/plain',
+        bytes: new TextEncoder().encode('姓名：张三\n项目会在 2026-05-20 14:00 开始'),
+      },
+      {
+        parseDocument: async () => ({
+          text: '姓名：张三\n项目会在 2026-05-20 14:00 开始',
+          fileKind: 'txt',
+          parseEngine: 'text',
+          warnings: [],
+          requiresOcr: false,
+        }),
+        onProgress: (item) => progress.push(item),
+      },
+    )
+
+    expect(response.ok).toBe(true)
+    expect(progress[0]).toMatchObject({ percent: 12, status: '准备解析文档' })
+    expect(progress.some((item) => item.status === '隐私脱敏')).toBe(true)
+    expect(progress.some((item) => item.status === '抽取日程')).toBe(true)
+    expect(progress.at(-1)).toMatchObject({ percent: 100, status: '解析完成' })
   })
 })

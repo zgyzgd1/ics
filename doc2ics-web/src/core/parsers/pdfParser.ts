@@ -1,9 +1,15 @@
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
+import type { ParseProgress } from '../../types/app'
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
 type ParsedPdfKind = 'digital' | 'scanned'
+type ProgressHandler = (progress: ParseProgress) => void
+
+interface PdfParseOptions {
+  onProgress?: ProgressHandler
+}
 
 export function buildPdfDocumentOptions(bytes: Uint8Array) {
   return {
@@ -36,7 +42,7 @@ export async function detectPdfType(bytes: Uint8Array): Promise<ParsedPdfKind> {
   return 'scanned'
 }
 
-export async function extractTextFromPdf(bytes: Uint8Array): Promise<string> {
+export async function extractTextFromPdf(bytes: Uint8Array, options: PdfParseOptions = {}): Promise<string> {
   const doc = await getDocument(buildPdfDocumentOptions(bytes)).promise
   const pages: string[] = []
 
@@ -44,6 +50,11 @@ export async function extractTextFromPdf(bytes: Uint8Array): Promise<string> {
     const page = await doc.getPage(pageNumber)
     const content = await page.getTextContent()
     pages.push(readPageTextItems(content.items))
+    options.onProgress?.({
+      percent: Math.min(58, Math.round(22 + (pageNumber / doc.numPages) * 36)),
+      status: '解析 PDF 文本',
+      detail: `第 ${pageNumber}/${doc.numPages} 页`,
+    })
   }
 
   return pages.join('\n').trim()
