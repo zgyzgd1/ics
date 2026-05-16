@@ -1,0 +1,21 @@
+# Root ignores for local build artifacts
+node_modules/
+dist/
+dist-ssr/
+test-results/
+playwright-report/
+*.log
+*.local
+
+# Nested web app artifacts
+doc2ics-web/node_modules/
+doc2ics-web/dist/
+doc2ics-web/test-results/
+doc2ics-web/playwright-report/
+doc2ics-web/*.log
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
