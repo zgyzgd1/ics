@@ -39,42 +39,17 @@ export function buildDefaultIcsFilename(inputName: string): string {
 }
 
 export async function saveIcsToDisk(content: string, filename: string): Promise<void> {
-  const maybeWindow = window as Window & {
-    showSaveFilePicker?: (options: {
-      suggestedName: string
-      types: Array<{ description: string; accept: Record<string, string[]> }>
-    }) => Promise<{
-      createWritable: () => Promise<{
-        write: (data: string) => Promise<void>
-        close: () => Promise<void>
-      }>
-    }>
-  }
-
-  if (maybeWindow.showSaveFilePicker) {
-    const handle = await maybeWindow.showSaveFilePicker({
-      suggestedName: filename,
-      types: [
-        {
-          description: '日历文件',
-          accept: { 'text/calendar': ['.ics'] },
-        },
-      ],
-    })
-
-    const writable = await handle.createWritable()
-    await writable.write(content)
-    await writable.close()
-    return
-  }
-
   const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = filename
+  anchor.rel = 'noopener'
+  anchor.style.display = 'none'
+  document.body.append(anchor)
   anchor.click()
-  URL.revokeObjectURL(url)
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 export async function shareIcsFile(content: string, filename: string): Promise<boolean> {
