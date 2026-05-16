@@ -16,3 +16,8 @@
 - Extended AI JSON parsing so model output can preserve event type, recurrence, reminders, course metadata, organizer, attendees, and source email.
 - Added event editor fields for event type, reminders, course repetition/teacher/weeks, organizer, attendees, and source email.
 - Verified targeted ICS/AI tests, production build, and lint after the ICS adaptation changes.
+
+## 2026-05-16
+- Added AI context compression before model requests to deduplicate repeated text and keep high-value schedule clues.
+- Added a focused test for long noisy context containing course, meeting, location, and email signals.
+- Updated the enhancement panel copy to tell users AI recognition compresses long document context before extraction.

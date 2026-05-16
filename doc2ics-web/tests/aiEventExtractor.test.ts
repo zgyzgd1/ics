@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildOpenAiChatUrl, parseAiEventsPayload } from '../src/core/ai/aiEventExtractor'
+import { buildOpenAiChatUrl, compactAiContext, parseAiEventsPayload } from '../src/core/ai/aiEventExtractor'
 
 describe('parseAiEventsPayload', () => {
   it('normalizes valid model events and skips invalid rows', () => {
@@ -83,5 +83,31 @@ describe('buildOpenAiChatUrl', () => {
     expect(buildOpenAiChatUrl('http://localhost:11434/v1/')).toBe(
       'http://localhost:11434/v1/chat/completions',
     )
+  })
+})
+
+describe('compactAiContext', () => {
+  it('keeps schedule clues while removing repeated low-value context', () => {
+    const noisyText = [
+      '学校通知',
+      ...Array.from({ length: 20 }, () => '免责声明：本邮件内容仅供参考，请勿外传。'),
+      '课程名称：高等数学',
+      '上课时间：2026 年 9 月 7 日 周一 08:00-09:40',
+      '上课地点：教学楼 A101',
+      '任课教师：张老师',
+      '会议邀请：论文组会 2026-05-20 14:00 会议室 B',
+      '发件人：teacher@example.com',
+      ...Array.from({ length: 20 }, () => '页脚：请关注公众号获取更多资讯。'),
+    ].join('\n')
+
+    const compacted = compactAiContext(noisyText, 180)
+
+    expect(compacted.length).toBeLessThanOrEqual(180)
+    expect(compacted).toContain('高等数学')
+    expect(compacted).toContain('2026 年 9 月 7 日')
+    expect(compacted).toContain('教学楼 A101')
+    expect(compacted).toContain('teacher@example.com')
+    expect(compacted.match(/免责声明/g)?.length ?? 0).toBeLessThanOrEqual(1)
+    expect(compacted.match(/页脚/g)?.length ?? 0).toBeLessThanOrEqual(1)
   })
 })

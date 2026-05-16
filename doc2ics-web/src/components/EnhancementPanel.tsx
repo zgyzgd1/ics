@@ -62,6 +62,7 @@ export function EnhancementPanel({
         />
         AI 增强识别
       </label>
+      <p className="muted">启用后会先压缩长文档上下文，优先保留课程、时间、地点、邮箱和会议线索。</p>
 
       {settings.ai.enabled && (
         <div className="settings-grid">

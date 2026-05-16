@@ -11,6 +11,7 @@ Add optional AI large-model extraction and optional remote OCR service support w
 - [x] Add optional HTTP OCR adapter for higher-accuracy OCR services.
 - [x] Connect settings into the worker pipeline and UI.
 - [x] Extend ICS export for course timetables, calendar events, email-sourced schedules, reminders, and recurrence.
+- [x] Compress AI recognition context before model calls to reduce token use and keep schedule clues.
 - [x] Verify tests, build, and browser behavior.
 
 ## Decisions
@@ -20,6 +21,7 @@ Add optional AI large-model extraction and optional remote OCR service support w
 - Remote OCR uses a simple multipart endpoint so users can connect PaddleOCR, EasyOCR, or a custom service.
 - Course timetable events export weekly recurrence, course metadata, alarms, and calendar categories.
 - Email/calendar events export organizer, attendees, source email metadata, alarms, and categories.
+- AI context compression deduplicates repeated lines and prioritizes date/time, course, location, email, meeting, and reminder clues.
 
 ## Errors Encountered
 | Error | Resolution |

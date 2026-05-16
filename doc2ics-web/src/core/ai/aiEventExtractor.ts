@@ -15,6 +15,21 @@ interface OpenAiChatResponse {
   choices?: OpenAiChatChoice[]
 }
 
+interface ScoredSegment {
+  index: number
+  score: number
+  text: string
+}
+
+const DEFAULT_AI_CONTEXT_LIMIT = 12000
+const LONG_SEGMENT_LENGTH = 360
+const DATE_TIME_PATTERN =
+  /(\d{4}[-/.年]\d{1,2}|\d{1,2}[-/.月]\d{1,2}|\d{1,2}:\d{2}|星期[一二三四五六日天]|周[一二三四五六日天]|上午|下午|早上|晚上|明天|后天|today|tomorrow)/i
+const COURSE_PATTERN = /(课程|课表|上课|下课|第[一二三四五六七八九十\d]+[节周]|任课|教师|教室| classroom|course)/i
+const CALENDAR_PATTERN = /(会议|日程|邀请|提醒|参会|组织者|发件人|收件人|邮箱|邮件|calendar|meeting|organizer|attendee|reminder)/i
+const LOCATION_PATTERN = /(地点|地址|会议室|教学楼|校区|楼|室|room|location)/i
+const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null
 }
@@ -117,6 +132,87 @@ export function buildOpenAiChatUrl(baseUrl: string): string {
   return `${trimmed}/chat/completions`
 }
 
+function splitLongSegment(segment: string): string[] {
+  if (segment.length <= LONG_SEGMENT_LENGTH) return [segment]
+
+  const chunks: string[] = []
+  let buffer = ''
+  const parts = segment.split(/(?<=[。；;,.，、\s])/)
+
+  for (const part of parts) {
+    if (!part.trim()) continue
+    if (buffer.length + part.length > LONG_SEGMENT_LENGTH && buffer) {
+      chunks.push(buffer.trim())
+      buffer = ''
+    }
+    buffer += part
+  }
+
+  if (buffer.trim()) chunks.push(buffer.trim())
+  return chunks.length > 0 ? chunks : [segment.slice(0, LONG_SEGMENT_LENGTH)]
+}
+
+function contextSegments(text: string): string[] {
+  return text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .flatMap((line) => splitLongSegment(line.replace(/\s+/g, ' ').trim()))
+    .filter(Boolean)
+}
+
+function scoreSegment(text: string): number {
+  let score = 0
+  if (DATE_TIME_PATTERN.test(text)) score += 6
+  if (COURSE_PATTERN.test(text)) score += 5
+  if (CALENDAR_PATTERN.test(text)) score += 4
+  if (LOCATION_PATTERN.test(text)) score += 3
+  if (EMAIL_PATTERN.test(text)) score += 3
+  return score
+}
+
+function compactSegments(segments: ScoredSegment[], maxChars: number): ScoredSegment[] {
+  const selected = new Map<number, ScoredSegment>()
+  const candidates = segments
+    .filter((segment) => segment.score > 0 || segment.index < 2 || segment.index >= segments.length - 2)
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+
+  let length = 0
+  for (const segment of candidates) {
+    const nextLength = length + segment.text.length + (selected.size > 0 ? 1 : 0)
+    if (nextLength > maxChars) continue
+    selected.set(segment.index, segment)
+    length = nextLength
+  }
+
+  if (selected.size === 0 && segments[0]) {
+    selected.set(segments[0].index, {
+      ...segments[0],
+      text: segments[0].text.slice(0, maxChars),
+    })
+  }
+
+  return [...selected.values()].sort((a, b) => a.index - b.index)
+}
+
+export function compactAiContext(text: string, maxChars = DEFAULT_AI_CONTEXT_LIMIT): string {
+  const limit = Math.max(1, maxChars)
+  const seen = new Set<string>()
+  const segments = contextSegments(text).flatMap((segment, index) => {
+    const key = segment.toLowerCase()
+    if (seen.has(key)) return []
+    seen.add(key)
+    return [{ index, score: scoreSegment(segment), text: segment }]
+  })
+
+  if (segments.length === 0) return ''
+
+  const compacted = compactSegments(segments, limit)
+    .map((segment) => segment.text)
+    .join('\n')
+
+  return compacted.slice(0, limit)
+}
+
 export function parseAiEventsPayload(payload: unknown): CalendarEvent[] {
   return extractEventsArray(payload).flatMap((item, index) => {
     const record = asRecord(item)
@@ -185,7 +281,7 @@ export async function extractAiEventsFromText(
     },
     body: JSON.stringify({
       model,
-      messages: buildMessages(text.slice(0, 24000)),
+      messages: buildMessages(compactAiContext(text)),
       temperature: 0,
       response_format: { type: 'json_object' },
     }),
