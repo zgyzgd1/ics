@@ -34,7 +34,7 @@ export default function Export() {
     await navigator.clipboard.writeText(icsContent)
   }
 
-  async function handleSave() {
+  async function handleDownload() {
     if (!icsContent) return
     await saveIcsToDisk(icsContent, exportFilename)
   }
@@ -57,7 +57,7 @@ export default function Export() {
         onExportFilenameChange={setExportFilename}
         onGenerate={handleGenerate}
         onCopy={handleCopy}
-        onSave={handleSave}
+        onDownload={handleDownload}
         onShare={handleShare}
       />
     </section>

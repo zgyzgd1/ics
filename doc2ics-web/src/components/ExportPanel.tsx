@@ -9,7 +9,7 @@
   onExportFilenameChange: (value: string) => void
   onGenerate: () => void
   onCopy: () => void
-  onSave: () => void
+  onDownload: () => void
   onShare: () => void
 }
 
@@ -24,7 +24,7 @@ export function ExportPanel({
   onExportFilenameChange,
   onGenerate,
   onCopy,
-  onSave,
+  onDownload,
   onShare,
 }: ExportPanelProps) {
   return (
@@ -58,8 +58,8 @@ export function ExportPanel({
         <button type="button" onClick={onCopy} disabled={!icsContent}>
           复制
         </button>
-        <button type="button" onClick={onSave} disabled={!icsContent}>
-          保存
+        <button type="button" onClick={onDownload} disabled={!icsContent}>
+          下载
         </button>
         <button type="button" onClick={onShare} disabled={!icsContent}>
           分享
