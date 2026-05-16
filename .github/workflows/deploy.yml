@@ -28,6 +28,8 @@ jobs:
           cache: npm
           cache-dependency-path: doc2ics-web/package-lock.json
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - run: npm ci
       - run: npm run build
       - run: cp dist/index.html dist/404.html
