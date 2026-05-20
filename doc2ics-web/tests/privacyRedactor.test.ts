@@ -26,12 +26,24 @@ describe('redactSensitiveStudentInfo', () => {
   })
 
   it('redacts timetable owner written as student label before an id', () => {
-    const text = '我的课程表 2026年春季学期 学生：张三([已脱敏学号]) B04211004-机械设计基础 A[02]'
+    const text = '我的课程表 2026年春季学期 学生：张三(2024214110625) B04211004-机械设计基础 A[02]'
 
     const redacted = redactSensitiveStudentInfo(text)
 
     expect(redacted).toContain('学生：[已脱敏姓名]([已脱敏学号])')
     expect(redacted).toContain('机械设计基础')
     expect(redacted).not.toContain('张三')
+    expect(redacted).not.toContain('2024214110625')
+  })
+
+  it('redacts parenthesized student ID after name', () => {
+    const text = '学生：张光耀(2024214110625) 上课时间暂未确定的课程'
+
+    const redacted = redactSensitiveStudentInfo(text)
+
+    expect(redacted).toContain('学生：[已脱敏姓名]([已脱敏学号])')
+    expect(redacted).not.toContain('张光耀')
+    expect(redacted).not.toContain('2024214110625')
+    expect(redacted).toContain('上课时间暂未确定的课程')
   })
 })

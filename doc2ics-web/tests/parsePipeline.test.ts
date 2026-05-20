@@ -123,6 +123,32 @@ describe('parseDocumentToEvents', () => {
     expect(response.events.some((event) => event.description?.includes('202312345678'))).toBe(false)
   })
 
+  it('redacts parenthesized student ID after name as in real timetable PDFs', async () => {
+    const input = {
+      fileName: 'timeTableForStu12.pdf',
+      mimeType: 'application/pdf',
+      bytes: new Uint8Array([1, 2, 3]),
+    }
+
+    const response = await parseDocumentToEvents(input, {
+      parseDocument: async () => ({
+        text: '我的课程表 2026年春季学期 学生：张光耀(2024214110625) B04211004-机械设计基础 A[02] 13-14周,星期1,第1小节-第2小节东1教-209(D)',
+        fileKind: 'pdf',
+        parseEngine: 'pdfjs-dist',
+        warnings: [],
+        requiresOcr: false,
+      }),
+    })
+
+    expect(response.ok).toBe(true)
+    if (!response.ok) return
+    expect(response.outcome.text).not.toContain('张光耀')
+    expect(response.outcome.text).not.toContain('2024214110625')
+    expect(response.outcome.text).toContain('学生：[已脱敏姓名]([已脱敏学号])')
+    expect(response.outcome.text).toContain('机械设计基础')
+    expect(response.events.some((event) => event.summary.includes('机械设计基础'))).toBe(true)
+  })
+
   it('reports parsing progress stages', async () => {
     const progress: ParseProgress[] = []
 
