@@ -60,11 +60,17 @@ export async function remoteOcrBlob(blob: Blob, settings: OcrSettings, pageNumbe
 export async function remoteOcrPdfBytes(bytes: Uint8Array, settings: OcrSettings): Promise<string> {
   const pageImages = await renderPdfPagesToImageBlobs(bytes)
   const pageTexts: string[] = []
+  const concurrencyLimit = 3
 
-  for (let pageIndex = 0; pageIndex < pageImages.length; pageIndex += 1) {
-    const text = await remoteOcrBlob(pageImages[pageIndex], settings, pageIndex + 1)
-    if (text) {
-      pageTexts.push(text)
+  for (let i = 0; i < pageImages.length; i += concurrencyLimit) {
+    const batch = pageImages.slice(i, i + concurrencyLimit)
+    const batchResults = await Promise.all(
+      batch.map((blob, idx) => remoteOcrBlob(blob, settings, i + idx + 1))
+    )
+    for (const text of batchResults) {
+      if (text) {
+        pageTexts.push(text)
+      }
     }
   }
 

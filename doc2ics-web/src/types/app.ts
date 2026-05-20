@@ -24,6 +24,8 @@ export interface CalendarEvent {
     teacher?: string
     classroom?: string
     weeks?: string
+    semesterStartDate?: string
+    weekRule?: 'ALL' | 'ODD' | 'EVEN' | 'CUSTOM'
   }
   sourceText?: string
   confidence?: number

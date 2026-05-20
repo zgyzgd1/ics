@@ -1,4 +1,4 @@
-﻿import { addHours, addMinutes, format } from 'date-fns'
+﻿import { addMinutes, format } from 'date-fns'
 
 export function toInputDateTime(date: Date): string {
   return format(date, "yyyy-MM-dd'T'HH:mm")
@@ -17,10 +17,5 @@ export function inferEventEnd(start: Date, explicitEnd?: Date, fallbackMinutes =
     return explicitEnd
   }
 
-  const plusMinutes = addMinutes(start, fallbackMinutes)
-  if (plusMinutes.getTime() > start.getTime()) {
-    return plusMinutes
-  }
-
-  return addHours(start, 1)
+  return addMinutes(start, fallbackMinutes)
 }

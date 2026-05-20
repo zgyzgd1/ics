@@ -295,5 +295,10 @@ export async function extractAiEventsFromText(
   const content = data.choices?.[0]?.message?.content ?? ''
   if (!content.trim()) return []
 
-  return parseAiEventsPayload(JSON.parse(content))
+  try {
+    const parsed = JSON.parse(content)
+    return parseAiEventsPayload(parsed)
+  } catch (error) {
+    throw new Error(`AI 返回的 JSON 格式无效`, { cause: error })
+  }
 }

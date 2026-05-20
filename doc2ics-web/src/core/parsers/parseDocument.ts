@@ -3,6 +3,8 @@ import type { ParseOutcome, ParseProgress } from '../../types/app'
 import { extractTextFromExcel } from './excelParser'
 import { extractTextFromOffice } from './officeParser'
 
+const PDF_OCR_MIN_TEXT_THRESHOLD = 80
+
 export interface ParseDocumentInput {
   fileName: string
   mimeType: string
@@ -30,7 +32,7 @@ export async function parseDocument(
     options.onProgress?.({ percent: 18, status: '检查 PDF 类型' })
     const pdfKind = await detectPdfType(input.bytes)
     const text = await extractTextFromPdf(input.bytes, { onProgress: options.onProgress })
-    const requiresOcr = pdfKind === 'scanned' || text.length < 80
+    const requiresOcr = pdfKind === 'scanned' || text.length < PDF_OCR_MIN_TEXT_THRESHOLD
 
     if (requiresOcr) {
       warnings.push('PDF 看起来像扫描件，建议使用文字识别以获得更好的结果。')

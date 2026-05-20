@@ -6,24 +6,28 @@ function normalizeCell(value: unknown): string {
 }
 
 export async function extractTextFromExcel(bytes: Uint8Array): Promise<string> {
-  const workbook = XLSX.read(bytes, { type: 'array' })
-  const chunks: string[] = []
+  try {
+    const workbook = XLSX.read(bytes, { type: 'array' })
+    const chunks: string[] = []
 
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName]
-    const rows = XLSX.utils.sheet_to_json<Array<unknown>>(sheet, {
-      header: 1,
-      blankrows: false,
-      raw: false,
-    })
+    for (const sheetName of workbook.SheetNames) {
+      const sheet = workbook.Sheets[sheetName]
+      const rows = XLSX.utils.sheet_to_json<Array<unknown>>(sheet, {
+        header: 1,
+        blankrows: false,
+        raw: false,
+      })
 
-    const normalized = rows
-      .map((row) => row.map((cell) => normalizeCell(cell)).join(' | ').trim())
-      .filter(Boolean)
+      const normalized = rows
+        .map((row) => row.map((cell) => normalizeCell(cell)).join(' | ').trim())
+        .filter(Boolean)
 
-    chunks.push(`# ${sheetName}`)
-    chunks.push(...normalized)
+      chunks.push(`# ${sheetName}`)
+      chunks.push(...normalized)
+    }
+
+    return chunks.join('\n').trim()
+  } catch (error) {
+    throw new Error(`Excel 文件解析失败`, { cause: error })
   }
-
-  return chunks.join('\n').trim()
 }

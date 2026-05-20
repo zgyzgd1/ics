@@ -31,33 +31,41 @@ function readPageTextItems(items: unknown[]): string {
 
 export async function detectPdfType(bytes: Uint8Array): Promise<ParsedPdfKind> {
   const doc = await getDocument(buildPdfDocumentOptions(bytes)).promise
-  const firstPage = await doc.getPage(1)
-  const content = await firstPage.getTextContent()
-  const line = readPageTextItems(content.items)
+  try {
+    const firstPage = await doc.getPage(1)
+    const content = await firstPage.getTextContent()
+    const line = readPageTextItems(content.items)
 
-  if (line.length > 100 || content.items.length > 10) {
-    return 'digital'
+    if (line.length > 100 || content.items.length > 10) {
+      return 'digital'
+    }
+
+    return 'scanned'
+  } finally {
+    doc.destroy()
   }
-
-  return 'scanned'
 }
 
 export async function extractTextFromPdf(bytes: Uint8Array, options: PdfParseOptions = {}): Promise<string> {
   const doc = await getDocument(buildPdfDocumentOptions(bytes)).promise
-  const pages: string[] = []
+  try {
+    const pages: string[] = []
 
-  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
-    const page = await doc.getPage(pageNumber)
-    const content = await page.getTextContent()
-    pages.push(readPageTextItems(content.items))
-    options.onProgress?.({
-      percent: Math.min(58, Math.round(22 + (pageNumber / doc.numPages) * 36)),
-      status: '解析 PDF 文本',
-      detail: `第 ${pageNumber}/${doc.numPages} 页`,
-    })
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber)
+      const content = await page.getTextContent()
+      pages.push(readPageTextItems(content.items))
+      options.onProgress?.({
+        percent: Math.min(58, Math.round(22 + (pageNumber / doc.numPages) * 36)),
+        status: '解析 PDF 文本',
+        detail: `第 ${pageNumber}/${doc.numPages} 页`,
+      })
+    }
+
+    return pages.join('\n').trim()
+  } finally {
+    doc.destroy()
   }
-
-  return pages.join('\n').trim()
 }
 
 interface RenderCanvas {

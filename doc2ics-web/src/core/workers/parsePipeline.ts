@@ -14,6 +14,7 @@ import { ocrPdfBytes } from '../ocr/tesseractOCR'
 import { parseDocument as defaultParseDocument, type ParseDocumentInput } from '../parsers/parseDocument'
 import { redactSensitiveStudentInfo } from '../privacy/privacyRedactor'
 import { aiSettingsAreComplete, withDefaultRecognitionSettings } from '../recognition/settings'
+import { extractCourseEventsFromText } from '../extractor/courseTimetableExtractor'
 
 type ProgressHandler = (progress: ParseProgress) => void
 type ParseDocumentFn = (input: ParseDocumentInput, options?: { onProgress?: ProgressHandler }) => Promise<ParseOutcome>
@@ -38,8 +39,11 @@ function emitProgress(onProgress: ProgressHandler | undefined, progress: ParsePr
 }
 
 function buildEvents(text: string): CalendarEvent[] {
-  const extracted = extractEventsFromText(text)
-  return extracted.length > 0 ? extracted : [createFallbackEvent()]
+  const courseEvents = extractCourseEventsFromText(text)
+  const generalEvents = extractEventsFromText(text)
+
+  const allEvents = [...courseEvents, ...generalEvents]
+  return allEvents.length > 0 ? allEvents : [createFallbackEvent()]
 }
 
 function errorMessage(error: unknown, fallback: string): string {

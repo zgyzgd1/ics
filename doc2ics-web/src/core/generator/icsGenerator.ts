@@ -26,6 +26,21 @@ function eventCategory(event: CalendarEvent): string | null {
   return null
 }
 
+function vs1TimetableMetadata(event: CalendarEvent): Record<string, string> {
+  if (event.eventType !== 'course' || !event.course?.semesterStartDate || !event.course.weeks) {
+    return {}
+  }
+
+  return {
+    'X-TIMETABLE-ENTRY-ID': sanitizeText(event.id),
+    'X-TIMETABLE-RECURRENCE': 'WEEKLY',
+    'X-TIMETABLE-SEMESTER-START': sanitizeText(event.course.semesterStartDate),
+    'X-TIMETABLE-WEEK-RULE': event.course.weekRule ?? 'CUSTOM',
+    'X-TIMETABLE-CUSTOM-WEEKS': sanitizeText(event.course.weeks),
+    'X-TIMETABLE-SKIP-WEEKS': '',
+  }
+}
+
 function repeatingFrequency(frequency: EventRecurrence['frequency']): ICalEventRepeatingFreq {
   if (frequency === 'daily') return ICalEventRepeatingFreq.DAILY
   if (frequency === 'monthly') return ICalEventRepeatingFreq.MONTHLY
@@ -136,6 +151,7 @@ function addSingleEvent(calendar: ReturnType<typeof createCalendar>, event: Cale
   icalEvent.x({
     'X-DOC2ICS-EVENT-TYPE': event.eventType ?? 'general',
     ...(event.sourceEmail ? { 'X-DOC2ICS-SOURCE-EMAIL': sanitizeText(event.sourceEmail) } : {}),
+    ...vs1TimetableMetadata(event),
   })
 }
 

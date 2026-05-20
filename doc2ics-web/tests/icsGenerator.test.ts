@@ -88,6 +88,43 @@ describe('buildIcs', () => {
     expect(ics).toContain('任课教师：张老师')
   })
 
+  it('exports VS1 timetable metadata for imported course events', () => {
+    const ics = buildIcs(
+      [
+        {
+          id: 'course-vs1',
+          eventType: 'course',
+          summary: '机械设计基础 A',
+          start: '2026-05-18T00:00:00.000Z',
+          end: '2026-05-18T01:40:00.000Z',
+          location: '东1教-209(D)',
+          recurrence: {
+            frequency: 'weekly',
+            count: 2,
+            byDay: ['MO'],
+          },
+          course: {
+            classroom: '东1教-209(D)',
+            weeks: '13,14',
+            semesterStartDate: '2026-02-23',
+            weekRule: 'CUSTOM',
+          },
+        },
+      ],
+      {
+        calendarName: '课程表',
+        timezone: 'Asia/Shanghai',
+      },
+    )
+
+    expect(ics).toContain('X-TIMETABLE-ENTRY-ID:course-vs1')
+    expect(ics).toContain('X-TIMETABLE-RECURRENCE:WEEKLY')
+    expect(ics).toContain('X-TIMETABLE-SEMESTER-START:2026-02-23')
+    expect(ics).toContain('X-TIMETABLE-WEEK-RULE:CUSTOM')
+    expect(ics).toContain('X-TIMETABLE-CUSTOM-WEEKS:13\\,14')
+    expect(ics).toContain('X-TIMETABLE-SKIP-WEEKS:')
+  })
+
   it('exports email and calendar sourced events with attendees and source metadata', () => {
     const ics = buildIcs(
       [
