@@ -20,11 +20,15 @@ export default function Export() {
 
   async function handleGenerate() {
     setIsGenerating(true)
-    const response = await runIcsWorker(events, { calendarName, timezone })
-    if (response.ok) {
-      setIcsContent(response.ics)
-    } else {
-      setIcsContent(`错误：${response.error}`)
+    try {
+      const response = await runIcsWorker(events, { calendarName, timezone })
+      if (response.ok) {
+        setIcsContent(response.ics)
+      } else {
+        setIcsContent(`错误：${response.error}`)
+      }
+    } catch (error) {
+      setIcsContent(`错误：${error instanceof Error ? error.message : '日历文件生成失败'}`)
     }
     setIsGenerating(false)
   }
