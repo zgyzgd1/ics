@@ -37,7 +37,6 @@ function vs1TimetableMetadata(event: CalendarEvent): Record<string, string> {
     'X-TIMETABLE-SEMESTER-START': sanitizeText(event.course.semesterStartDate),
     'X-TIMETABLE-WEEK-RULE': event.course.weekRule ?? 'CUSTOM',
     'X-TIMETABLE-CUSTOM-WEEKS': sanitizeText(event.course.weeks),
-    'X-TIMETABLE-SKIP-WEEKS': '',
   }
 }
 

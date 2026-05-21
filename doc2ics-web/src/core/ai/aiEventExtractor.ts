@@ -23,6 +23,7 @@ interface ScoredSegment {
 
 const DEFAULT_AI_CONTEXT_LIMIT = 12000
 const LONG_SEGMENT_LENGTH = 360
+const AI_REQUEST_TIMEOUT_MS = 60_000
 const DATE_TIME_PATTERN =
   /(\d{4}[-/.年]\d{1,2}|\d{1,2}[-/.月]\d{1,2}|\d{1,2}:\d{2}|星期[一二三四五六日天]|周[一二三四五六日天]|上午|下午|早上|晚上|明天|后天|today|tomorrow)/i
 const COURSE_PATTERN = /(课程|课表|上课|下课|第[一二三四五六七八九十\d]+[节周]|任课|教师|教室| classroom|course)/i
@@ -273,32 +274,40 @@ export async function extractAiEventsFromText(
     return []
   }
 
-  const response = await fetch(buildOpenAiChatUrl(baseUrl), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: buildMessages(compactAiContext(text)),
-      temperature: 0,
-      response_format: { type: 'json_object' },
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`AI 接口请求失败：${response.status}`)
-  }
-
-  const data = (await response.json()) as OpenAiChatResponse
-  const content = data.choices?.[0]?.message?.content ?? ''
-  if (!content.trim()) return []
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS)
 
   try {
-    const parsed = JSON.parse(content)
-    return parseAiEventsPayload(parsed)
-  } catch (error) {
-    throw new Error(`AI 返回的 JSON 格式无效`, { cause: error })
+    const response = await fetch(buildOpenAiChatUrl(baseUrl), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: buildMessages(compactAiContext(text)),
+        temperature: 0,
+        response_format: { type: 'json_object' },
+      }),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`AI 接口请求失败：${response.status}`)
+    }
+
+    const data = (await response.json()) as OpenAiChatResponse
+    const content = data.choices?.[0]?.message?.content ?? ''
+    if (!content.trim()) return []
+
+    try {
+      const parsed = JSON.parse(content)
+      return parseAiEventsPayload(parsed)
+    } catch (error) {
+      throw new Error(`AI 返回的 JSON 格式无效`, { cause: error })
+    }
+  } finally {
+    window.clearTimeout(timeoutId)
   }
 }

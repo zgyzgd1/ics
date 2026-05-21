@@ -1,4 +1,5 @@
 ﻿import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import Home from './pages/Home'
 import Preview from './pages/Preview'
 import Mapping from './pages/Mapping'
@@ -52,15 +53,17 @@ export default function App() {
       </nav>
 
       <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/preview" element={hasParsed ? <Preview /> : <Navigate to="/" replace />} />
-          <Route path="/mapping" element={hasParsed ? <Mapping /> : <Navigate to="/" replace />} />
-          <Route
-            path="/export"
-            element={hasParsed && events.length > 0 ? <Export /> : <Navigate to="/" replace />}
-          />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/preview" element={hasParsed ? <Preview /> : <Navigate to="/" replace />} />
+            <Route path="/mapping" element={hasParsed ? <Mapping /> : <Navigate to="/" replace />} />
+            <Route
+              path="/export"
+              element={hasParsed && events.length > 0 ? <Export /> : <Navigate to="/" replace />}
+            />
+          </Routes>
+        </ErrorBoundary>
       </main>
     </div>
   )

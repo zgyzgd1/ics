@@ -129,6 +129,7 @@ export function EventTable({ events, onUpdate, onRemove }: EventTableProps) {
                       onChange={(e) =>
                         onUpdate(event.id, {
                           recurrence: {
+                            ...event.recurrence,
                             frequency: 'weekly',
                             count: Number(e.target.value) || undefined,
                           },

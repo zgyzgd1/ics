@@ -14,10 +14,7 @@
   },
   "dependencies": {
     "chrono-node": "^2.9.1",
-    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "datebook": "^8.0.1",
-    "exceljs": "^4.4.0",
     "ical-generator": "^10.2.0",
     "idb": "^8.0.3",
     "lucide-react": "^1.16.0",

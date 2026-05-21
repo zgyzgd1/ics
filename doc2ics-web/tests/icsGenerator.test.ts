@@ -122,7 +122,7 @@ describe('buildIcs', () => {
     expect(ics).toContain('X-TIMETABLE-SEMESTER-START:2026-02-23')
     expect(ics).toContain('X-TIMETABLE-WEEK-RULE:CUSTOM')
     expect(ics).toContain('X-TIMETABLE-CUSTOM-WEEKS:13\\,14')
-    expect(ics).toContain('X-TIMETABLE-SKIP-WEEKS:')
+    expect(ics).not.toContain('X-TIMETABLE-SKIP-WEEKS')
   })
 
   it('exports email and calendar sourced events with attendees and source metadata', () => {
