@@ -33,9 +33,13 @@ export function MappingPanel({
       timezone,
     }
 
-    await saveMappingTemplate(template)
-    setTemplates(await listMappingTemplates())
-    setStatus(`已保存预设：${name}`)
+    try {
+      await saveMappingTemplate(template)
+      setTemplates(await listMappingTemplates())
+      setStatus(`已保存预设：${name}`)
+    } catch {
+      setStatus('保存失败：浏览器存储不可用')
+    }
   }
 
   function handleLoadTemplate(template: MappingTemplate) {

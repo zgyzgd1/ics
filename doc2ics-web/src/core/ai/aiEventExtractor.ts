@@ -307,6 +307,11 @@ export async function extractAiEventsFromText(
     } catch (error) {
       throw new Error(`AI 返回的 JSON 格式无效`, { cause: error })
     }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('AI 接口请求超时（60 秒）')
+    }
+    throw error
   } finally {
     window.clearTimeout(timeoutId)
   }

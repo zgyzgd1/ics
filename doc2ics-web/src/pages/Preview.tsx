@@ -22,6 +22,9 @@ export default function Preview() {
             </li>
           ))}
         </ul>
+        {events.length > 8 && (
+          <p className="muted">还有 {events.length - 8} 个事件未显示，请到映射页面查看。</p>
+        )}
 
         <Link to="/mapping" className="button-link">
           编辑映射和事件
