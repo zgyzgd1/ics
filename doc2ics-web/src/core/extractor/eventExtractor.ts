@@ -8,20 +8,8 @@ function buildEventId(index: number, start: Date): string {
 }
 
 function guessSummary(text: string, index: number): string {
-  const lines = text.split(/\r?\n/)
-  let consumed = 0
-
-  for (const line of lines) {
-    consumed += line.length + 1
-    if (consumed >= index) {
-      const cleaned = line.replace(/\s+/g, ' ').trim()
-      if (cleaned.length > 0) {
-        return cleaned.slice(0, 100)
-      }
-      break
-    }
-  }
-
+  const before = text.slice(Math.max(0, index - 60), index).trim()
+  if (before) return before.slice(0, 100)
   return '导入的日程'
 }
 

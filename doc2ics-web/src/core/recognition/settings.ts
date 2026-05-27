@@ -14,6 +14,13 @@ export const defaultRecognitionSettings: RecognitionSettings = {
   },
 }
 
+export function sanitizeRecognitionSettings(settings: RecognitionSettings): RecognitionSettings {
+  return {
+    ocr: { ...settings.ocr, remoteEndpoint: '' },
+    ai: { ...settings.ai, apiKey: '' },
+  }
+}
+
 export function withDefaultRecognitionSettings(settings?: RecognitionSettings): RecognitionSettings {
   return {
     ocr: {

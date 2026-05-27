@@ -22,17 +22,16 @@ let dbPromise: Promise<IDBPDatabase<Doc2IcsDB>> | null = null
 
 function getDb() {
   if (!dbPromise) {
-    try {
-      dbPromise = openDB<Doc2IcsDB>(DB_NAME, DB_VERSION, {
-        upgrade(db) {
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { keyPath: 'id' })
-          }
-        },
-      })
-    } catch {
-      dbPromise = Promise.reject(new Error('IndexedDB 不可用'))
-    }
+    dbPromise = openDB<Doc2IcsDB>(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' })
+        }
+      },
+    }).catch((error) => {
+      dbPromise = null
+      throw error
+    })
   }
   return dbPromise
 }

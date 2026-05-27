@@ -34,44 +34,54 @@ export function readRemoteOcrText(payload: unknown): string {
   return readTextArray(record.results)
 }
 
+const REMOTE_OCR_TIMEOUT_MS = 30_000
+
 export async function remoteOcrBlob(blob: Blob, settings: OcrSettings, pageNumber: number): Promise<string> {
   const endpoint = settings.remoteEndpoint.trim()
   if (!endpoint) {
     throw new Error('请先填写远程 OCR 服务地址')
   }
 
-  const formData = new FormData()
-  formData.append('image', blob, `page-${pageNumber}.png`)
-  formData.append('language', settings.language)
-  formData.append('page', String(pageNumber))
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REMOTE_OCR_TIMEOUT_MS)
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    body: formData,
-  })
+  try {
+    const formData = new FormData()
+    formData.append('image', blob, `page-${pageNumber}.png`)
+    formData.append('language', settings.language)
+    formData.append('page', String(pageNumber))
 
-  if (!response.ok) {
-    throw new Error(`远程 OCR 服务请求失败：${response.status}`)
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`远程 OCR 服务请求失败：${response.status}`)
+    }
+
+    return readRemoteOcrText(await response.json())
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('远程 OCR 服务请求超时（30 秒）', { cause: error })
+    }
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
   }
-
-  return readRemoteOcrText(await response.json())
 }
 
 export async function remoteOcrPdfBytes(bytes: Uint8Array, settings: OcrSettings): Promise<string> {
-  const pageImages = await renderPdfPagesToImageBlobs(bytes)
   const pageTexts: string[] = []
-  const concurrencyLimit = 3
 
-  for (let i = 0; i < pageImages.length; i += concurrencyLimit) {
-    const batch = pageImages.slice(i, i + concurrencyLimit)
-    const batchResults = await Promise.all(
-      batch.map((blob, idx) => remoteOcrBlob(blob, settings, i + idx + 1))
-    )
-    for (const text of batchResults) {
-      if (text) {
-        pageTexts.push(text)
-      }
+  let pageNumber = 1
+  for await (const pageImage of renderPdfPagesToImageBlobs(bytes)) {
+    const text = await remoteOcrBlob(pageImage, settings, pageNumber)
+    if (text) {
+      pageTexts.push(text)
     }
+    pageNumber += 1
   }
 
   return normalizeOcrText(pageTexts.join('\n\n'))

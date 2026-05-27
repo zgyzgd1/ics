@@ -1,4 +1,6 @@
-﻿interface ExportPanelProps {
+﻿import { TIMEZONE_OPTIONS } from '../utils/timezoneOptions'
+
+interface ExportPanelProps {
   calendarName: string
   timezone: string
   exportFilename: string
@@ -39,10 +41,9 @@ export function ExportPanel({
       <label>
         时区
         <select value={timezone} onChange={(e) => onTimezoneChange(e.target.value)}>
-          <option value="Asia/Shanghai">中国标准时间</option>
-          <option value="UTC">协调世界时</option>
-          <option value="America/Los_Angeles">洛杉矶时间</option>
-          <option value="Europe/London">伦敦时间</option>
+          {TIMEZONE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
         </select>
       </label>
 

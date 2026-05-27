@@ -309,7 +309,7 @@ export async function extractAiEventsFromText(
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('AI 接口请求超时（60 秒）')
+      throw new Error('AI 接口请求超时（60 秒）', { cause: error })
     }
     throw error
   } finally {

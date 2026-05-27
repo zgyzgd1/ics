@@ -117,23 +117,32 @@ function createRenderCanvas(width: number, height: number): RenderCanvas {
   throw new Error('PDF 文字识别需要浏览器支持画布')
 }
 
-export async function renderPdfPagesToImageBlobs(bytes: Uint8Array, scale = 2): Promise<Blob[]> {
+/**
+ * 将 PDF 页面逐页渲染为图片 Blob（AsyncGenerator 模式）。
+ * 使用 AsyncGenerator 避免一次性加载所有页面到内存，适合大型 PDF。
+ * 每页渲染完成后立即 yield，调用方可以逐页处理（如 OCR）。
+ *
+ * @param bytes - PDF 文件的 Uint8Array
+ * @param scale - 渲染缩放比例（默认 2，平衡质量与性能）
+ * @yields 每页的 PNG Blob
+ */
+export async function* renderPdfPagesToImageBlobs(bytes: Uint8Array, scale = 2): AsyncGenerator<Blob> {
   const doc = await getDocument(buildPdfDocumentOptions(bytes)).promise
-  const blobs: Blob[] = []
 
-  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
-    const page = await doc.getPage(pageNumber)
-    const viewport = page.getViewport({ scale })
-    const renderCanvas = createRenderCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height))
+  try {
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber)
+      const viewport = page.getViewport({ scale })
+      const renderCanvas = createRenderCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height))
 
-    await page.render({
-      canvas: null,
-      canvasContext: renderCanvas.context as unknown as CanvasRenderingContext2D,
-      viewport,
-    }).promise
+      await page.render({
+        canvas: renderCanvas.canvas as unknown as HTMLCanvasElement,
+        viewport,
+      }).promise
 
-    blobs.push(await renderCanvas.toBlob())
+      yield await renderCanvas.toBlob()
+    }
+  } finally {
+    doc.cleanup() // 确保 PDF 资源释放，防止内存泄漏
   }
-
-  return blobs
 }

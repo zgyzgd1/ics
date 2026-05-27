@@ -15,10 +15,9 @@ export async function ocrFromBlob(blob: Blob, language = 'chi_sim+eng'): Promise
 }
 
 export async function ocrPdfBytes(bytes: Uint8Array, language = 'chi_sim+eng'): Promise<string> {
-  const pageImages = await renderPdfPagesToImageBlobs(bytes)
   const pageTexts: string[] = []
 
-  for (const pageImage of pageImages) {
+  for await (const pageImage of renderPdfPagesToImageBlobs(bytes)) {
     const text = await ocrFromBlob(pageImage, language)
     if (text) {
       pageTexts.push(text)

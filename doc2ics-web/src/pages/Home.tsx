@@ -4,7 +4,9 @@ import { FileDrop } from '../components/FileDrop'
 import { runParseWorker } from '../core/workers/runParseWorker'
 import { useAppStore } from '../store/appStore'
 import type { ParseProgress } from '../types/app'
-import { assertSupportedFile } from '../utils/fileUtils'
+import { assertSupportedFile, formatFileSize } from '../utils/fileUtils'
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
 export default function Home() {
   const [parseProgress, setParseProgress] = useState<ParseProgress | null>(null)
@@ -33,6 +35,9 @@ export default function Home() {
 
     try {
       assertSupportedFile(selectedFile.name)
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        throw new Error(`文件过大（${formatFileSize(selectedFile.size)}），最大支持 ${formatFileSize(MAX_FILE_SIZE)}`)
+      }
       setParseProgress({ percent: 0, status: '等待开始' })
       startParsing()
 

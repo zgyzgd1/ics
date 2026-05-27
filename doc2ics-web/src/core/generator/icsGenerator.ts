@@ -80,13 +80,14 @@ function repeatingOptions(event: CalendarEvent): ICalRepeatingOptions | null {
 }
 
 function eventDescription(event: CalendarEvent): string {
-  const chunks = [sanitizeText(event.description)]
+  const desc = sanitizeText(event.description)
+  const chunks = desc ? [desc] : []
 
   if (event.course?.teacher) chunks.push(`任课教师：${sanitizeText(event.course.teacher)}`)
   if (event.course?.classroom) chunks.push(`教室：${sanitizeText(event.course.classroom)}`)
   if (event.course?.weeks) chunks.push(`上课周次：${sanitizeText(event.course.weeks)}`)
   if (event.sourceEmail) chunks.push(`来源邮箱：${sanitizeText(event.sourceEmail)}`)
-  if (event.sourceText) chunks.push(`来源文本：${sanitizeText(event.sourceText)}`)
+  if (event.sourceText && !desc.includes(event.sourceText)) chunks.push(`来源文本：${sanitizeText(event.sourceText)}`)
 
   return chunks.filter(Boolean).join('\n')
 }

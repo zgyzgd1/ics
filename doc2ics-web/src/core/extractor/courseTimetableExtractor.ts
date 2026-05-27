@@ -6,6 +6,9 @@ type WeekdayToken = NonNullable<NonNullable<CalendarEvent['recurrence']>['byDay'
 const COURSE_ROW_PATTERN =
   /([A-Z]{1,4}\d{5,})-([\s\S]*?)\[([^\]]+)\]\s*([\d,\-，、\s周()（）单双]+?)\s*[,，]\s*星期\s*([1-7一二三四五六日天])\s*[,，]\s*第\s*(\d{1,2})\s*小节\s*[-~～至到—–]\s*第\s*(\d{1,2})\s*小节\s*([\s\S]*?)(?=[\s,，]*[A-Z]{1,4}\d{5,}-|$)/g
 
+const GENERIC_COURSE_PATTERN =
+  /([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9（()）\s]{2,30}?)\s+第\s*(\d{1,2})\s*小节[-~～至到—–]\s*第\s*(\d{1,2})\s*小节[,，]\s*星期\s*([1-7一二三四五六日天])[,，]\s*(\d{1,2})-(\d{1,2})\s*周/g
+
 const SECTION_TIMES: Record<number, { start: string; end: string }> = {
   1: { start: '08:00', end: '08:45' },
   2: { start: '08:55', end: '09:40' },
@@ -69,13 +72,14 @@ function semesterStartFromText(text: string): string {
   const match = /(\d{4})年\s*(春季|秋季|夏季|冬季)?学期/.exec(text)
   const year = Number(match?.[1] ?? new Date().getFullYear())
   const term = match?.[2] ?? '春季'
-  const month = term === '秋季' ? 8 : term === '夏季' ? 6 : 1
-  const day = term === '秋季' ? 31 : term === '夏季' ? 29 : 23
-  return format(nextMondayOnOrAfter(new Date(Date.UTC(year, month, day))), 'yyyy-MM-dd')
+  const month = term === '秋季' ? 9 : term === '夏季' ? 7 : 2
+  const day = term === '秋季' ? 1 : term === '夏季' ? 1 : 23
+  const base = new Date(year, month - 1, day)
+  return format(nextMondayOnOrAfter(base), 'yyyy-MM-dd')
 }
 
 function nextMondayOnOrAfter(date: Date): Date {
-  const day = date.getUTCDay()
+  const day = date.getDay()
   const offset = (8 - day) % 7
   return addDays(date, offset)
 }
@@ -121,7 +125,8 @@ function rangeValues(start: number, end: number): number[] {
 }
 
 function localDateForWeek(semesterStartDate: string, week: number, day: number): string {
-  const start = new Date(`${semesterStartDate}T00:00:00Z`)
+  const [y, m, d] = semesterStartDate.split('-').map(Number)
+  const start = new Date(y, m - 1, d)
   return format(addDays(start, (week - 1) * 7 + (day - 1)), 'yyyy-MM-dd')
 }
 
@@ -131,6 +136,38 @@ function toIsoWithShanghaiOffset(date: string, time: string): string {
 
 function eventId(code: string, day: number, startSection: number, endSection: number, weeks: number[]): string {
   return `vs1-${code}-${day}-${startSection}-${endSection}-${weeks.join('-')}`
+}
+
+function extractFromGenericPattern(normalized: string, semesterStartDate: string, events: CalendarEvent[]): void {
+  for (const match of normalized.matchAll(GENERIC_COURSE_PATTERN)) {
+    const [, rawName, rawStartSection, rawEndSection, rawDay, rawStartWeek, rawEndWeek] = match
+    const day = dayNumber(rawDay)
+    const startSection = Number(rawStartSection)
+    const endSection = Number(rawEndSection)
+    const startTime = SECTION_TIMES[startSection]?.start
+    const endTime = SECTION_TIMES[endSection]?.end
+    const weeks = expandWeeks(`${rawStartWeek}-${rawEndWeek}周`)
+    const name = cleanCourseName(rawName)
+
+    if (!day || !WEEKDAY_TOKENS[day] || !startTime || !endTime || weeks.length === 0 || !name) {
+      continue
+    }
+
+    const id = `gen-${name}-${day}-${startSection}-${endSection}-${weeks.join('-')}`
+    if (events.some((e) => e.id === id)) continue
+
+    const firstDate = localDateForWeek(semesterStartDate, weeks[0], day)
+    events.push({
+      id,
+      eventType: 'course',
+      summary: name,
+      start: toIsoWithShanghaiOffset(firstDate, startTime),
+      end: toIsoWithShanghaiOffset(firstDate, endTime),
+      recurrence: { frequency: 'weekly', byDay: [WEEKDAY_TOKENS[day]], count: weeks.length },
+      course: { weeks: weeks.join(','), semesterStartDate, weekRule: 'CUSTOM' },
+      confidence: 0.7,
+    })
+  }
 }
 
 export function extractCourseEventsFromText(text: string): CalendarEvent[] {
@@ -177,6 +214,8 @@ export function extractCourseEventsFromText(text: string): CalendarEvent[] {
       confidence: 0.88,
     })
   }
+
+  extractFromGenericPattern(normalized, semesterStartDate, events)
 
   return events
 }

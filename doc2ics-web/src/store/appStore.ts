@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { defaultRecognitionSettings } from '../core/recognition/settings'
+import { defaultRecognitionSettings, sanitizeRecognitionSettings } from '../core/recognition/settings'
 import { buildDefaultIcsFilename } from '../utils/fileUtils'
+import { DEFAULT_TIMEZONE } from '../utils/timezoneOptions'
 import type {
   AiExtractionSettings,
   CalendarEvent,
@@ -41,13 +42,13 @@ interface AppState {
   reset: () => void
 }
 
-const defaultTimezone = 'Asia/Shanghai'
+const defaultTimezone = DEFAULT_TIMEZONE
 
 function cloneRecognitionSettings(): RecognitionSettings {
-  return {
+  return sanitizeRecognitionSettings({
     ocr: { ...defaultRecognitionSettings.ocr },
     ai: { ...defaultRecognitionSettings.ai },
-  }
+  })
 }
 
 function toPatchedSummary(summary: string, prefix: string): string {
@@ -155,24 +156,24 @@ export const useAppStore = create<AppState>((set) => ({
 
   updateOcrSettings: (patch) =>
     set((state) => ({
-      recognitionSettings: {
+      recognitionSettings: sanitizeRecognitionSettings({
         ...state.recognitionSettings,
         ocr: {
           ...state.recognitionSettings.ocr,
           ...patch,
         },
-      },
+      }),
     })),
 
   updateAiSettings: (patch) =>
     set((state) => ({
-      recognitionSettings: {
+      recognitionSettings: sanitizeRecognitionSettings({
         ...state.recognitionSettings,
         ai: {
           ...state.recognitionSettings.ai,
           ...patch,
         },
-      },
+      }),
     })),
 
   applySummaryPrefix: () =>

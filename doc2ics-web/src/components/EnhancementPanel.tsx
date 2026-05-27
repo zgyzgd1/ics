@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { AiExtractionSettings, OcrSettings, RecognitionSettings } from '../types/app'
+import { setApiKey, setRemoteOcrEndpoint } from '../utils/secureStore'
 
 interface EnhancementPanelProps {
   settings: RecognitionSettings
@@ -14,6 +16,8 @@ export function EnhancementPanel({
   onAiChange,
 }: EnhancementPanelProps) {
   const remoteOcrEnabled = settings.ocr.mode === 'remote'
+  const [localApiKey, setLocalApiKey] = useState('')
+  const [localRemoteEndpoint, setLocalRemoteEndpoint] = useState('')
 
   return (
     <section className="panel">
@@ -45,9 +49,12 @@ export function EnhancementPanel({
         <label>
           OCR 服务地址
           <input
-            value={settings.ocr.remoteEndpoint}
+            value={localRemoteEndpoint}
             disabled={disabled}
-            onChange={(event) => onOcrChange({ remoteEndpoint: event.target.value })}
+            onChange={(event) => {
+              setLocalRemoteEndpoint(event.target.value)
+              setRemoteOcrEndpoint(event.target.value)
+            }}
             placeholder="http://localhost:8000/ocr"
           />
         </label>
@@ -90,9 +97,12 @@ export function EnhancementPanel({
             API Key
             <input
               type="password"
-              value={settings.ai.apiKey}
+              value={localApiKey}
               disabled={disabled}
-              onChange={(event) => onAiChange({ apiKey: event.target.value })}
+              onChange={(event) => {
+                setLocalApiKey(event.target.value)
+                setApiKey(event.target.value)
+              }}
               placeholder="sk-..."
               autoComplete="off"
             />

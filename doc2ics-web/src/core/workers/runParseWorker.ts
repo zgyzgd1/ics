@@ -1,4 +1,5 @@
 import type { ParseProgress, ParseWorkerResponse, RecognitionSettings } from '../../types/app'
+import { getApiKey, getRemoteOcrEndpoint } from '../../utils/secureStore'
 import { detectFileKind } from '../../utils/fileUtils'
 
 const ParseWorker = new URL('./parse.worker.ts', import.meta.url)
@@ -12,6 +13,24 @@ function emitProgress(onProgress: ProgressHandler | undefined, progress: ParsePr
     ...progress,
     percent: Math.max(0, Math.min(100, Math.round(progress.percent))),
   })
+}
+
+/**
+ * 将 secureStore 中的敏感配置注入到 settings 对象。
+ * 这是最后一道防线，确保 API Key 仅在调用前存在内存中。
+ * 注入后立即使用，不持久化到任何 state 或 storage。
+ */
+function injectSecureSettings(settings?: RecognitionSettings): RecognitionSettings | undefined {
+  if (!settings) return settings
+  const apiKey = getApiKey()
+  const remoteEndpoint = getRemoteOcrEndpoint()
+  if (apiKey) {
+    settings = { ...settings, ai: { ...settings.ai, apiKey } }
+  }
+  if (remoteEndpoint) {
+    settings = { ...settings, ocr: { ...settings.ocr, remoteEndpoint } }
+  }
+  return settings
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -46,7 +65,7 @@ async function runParseOnMainThread(
         mimeType: file.type,
         bytes: new Uint8Array(buffer),
       },
-      { recognitionSettings, onProgress },
+      { recognitionSettings: injectSecureSettings(recognitionSettings), onProgress },
     )
   } catch (error) {
     return {
@@ -94,7 +113,7 @@ export function runParseWorker(
           fileName: file.name,
           mimeType: file.type,
           buffer,
-          recognitionSettings,
+          recognitionSettings: injectSecureSettings(recognitionSettings),
         })
       })
       .catch((error: unknown) => {
