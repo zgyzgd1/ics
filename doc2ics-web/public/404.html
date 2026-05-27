@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Loading...</title>
+    <script>
+      // SPA redirect: capture the current URL path and redirect to index.html
+      // This allows GitHub Pages to serve the index.html for all routes
+      const path = window.location.pathname;
+      const segments = path.split('/').filter(Boolean);
+      
+      // Store the intended path in sessionStorage so the app can handle routing
+      if (segments.length > 0) {
+        sessionStorage.setItem('redirectPath', '/' + segments.join('/'));
+      }
+      
+      // Redirect to root index.html
+      window.location.replace('/');
+    </script>
+  </head>
+  <body>
+    <p>Redirecting...</p>
+  </body>
+</html>
